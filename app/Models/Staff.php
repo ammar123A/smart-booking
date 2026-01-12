@@ -7,15 +7,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class Staff extends Model
 {
     use HasFactory;
+    use Notifiable;
 
     protected $table = 'staff';
 
     protected $fillable = [
         'name',
+        'email',
         'user_id',
         'timezone',
         'active',

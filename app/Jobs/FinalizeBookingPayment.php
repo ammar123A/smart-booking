@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Notifications\BookingConfirmed;
+use App\Notifications\StaffBookingAssigned;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -54,6 +56,11 @@ class FinalizeBookingPayment implements ShouldQueue
 
             $booking->status = Booking::STATUS_CONFIRMED;
             $booking->save();
+
+            // Send confirmation notifications
+            $booking->load(['customer', 'staff']);
+            $booking->customer?->notify(new BookingConfirmed($booking));
+            $booking->staff?->notify(new StaffBookingAssigned($booking));
         });
     }
 }

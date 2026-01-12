@@ -2,11 +2,13 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MyBookingsController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\ServiceAvailabilityController;
@@ -26,9 +28,7 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/checkout', CheckoutController::class)->name('checkout');
 
@@ -48,6 +48,8 @@ Route::middleware([
     Route::prefix('admin')
         ->middleware(['role:admin'])
         ->group(function () {
+            Route::get('/analytics', [AnalyticsController::class, 'index'])->name('admin.analytics.index');
+
             Route::get('/bookings', [AdminBookingController::class, 'index'])->name('admin.bookings.index');
             Route::get('/bookings/create', [AdminBookingController::class, 'create'])->name('admin.bookings.create');
             Route::post('/bookings', [AdminBookingController::class, 'store'])->name('admin.bookings.store');

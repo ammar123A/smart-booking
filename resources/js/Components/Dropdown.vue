@@ -14,6 +14,10 @@ const props = defineProps({
         type: Array,
         default: () => ['py-1', 'bg-white'],
     },
+    direction: {
+        type: String,
+        default: 'down',
+    },
 });
 
 let open = ref(false);
@@ -34,15 +38,27 @@ const widthClass = computed(() => {
 });
 
 const alignmentClasses = computed(() => {
-    if (props.align === 'left') {
-        return 'ltr:origin-top-left rtl:origin-top-right start-0';
+    const baseAlign = props.align === 'left' 
+        ? 'start-0'
+        : props.align === 'right' 
+        ? 'end-0' 
+        : '';
+    
+    if (props.direction === 'up') {
+        const origin = props.align === 'left'
+            ? 'ltr:origin-bottom-left rtl:origin-bottom-right'
+            : props.align === 'right'
+            ? 'ltr:origin-bottom-right rtl:origin-bottom-left'
+            : 'origin-bottom';
+        return `${origin} ${baseAlign} bottom-full mb-2`;
     }
-
-    if (props.align === 'right') {
-        return 'ltr:origin-top-right rtl:origin-top-left end-0';
-    }
-
-    return 'origin-top';
+    
+    const origin = props.align === 'left'
+        ? 'ltr:origin-top-left rtl:origin-top-right'
+        : props.align === 'right'
+        ? 'ltr:origin-top-right rtl:origin-top-left'
+        : 'origin-top';
+    return `${origin} ${baseAlign}`;
 });
 </script>
 
@@ -65,7 +81,7 @@ const alignmentClasses = computed(() => {
         >
             <div
                 v-show="open"
-                class="absolute z-50 mt-2 rounded-md shadow-lg"
+                class="absolute z-50 rounded-md shadow-lg"
                 :class="[widthClass, alignmentClasses]"
                 style="display: none;"
                 @click="open = false"

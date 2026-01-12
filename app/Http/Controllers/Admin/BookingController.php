@@ -7,6 +7,10 @@ use App\Models\ServicePrice;
 use App\Models\Staff;
 use App\Models\StaffTimeOff;
 use App\Models\User;
+use App\Notifications\BookingCancelled;
+use App\Notifications\BookingConfirmed;
+use App\Notifications\BookingRescheduled;
+use App\Notifications\StaffBookingAssigned;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -209,43 +213,64 @@ class BookingController
 
     public function updateAssignment(Request $request, Booking $booking)
     {
-        $validated = $request->validate([
-            'starts_at' => ['required', 'date'],
-            'timezone' => ['sometimes', 'string', 'max:64'],
-            'staff_id' => ['required', 'integer', 'exists:staff,id'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'starts_at' => ['required', 'date'],
+                'timezone' => ['sometimes', 'string', 'max:64'],
+                'staff_id' => ['required', 'integer', 'exists:staff,id'],
+            ]);
 
-        $booking->load(['servicePrice.service']);
+            $booking->load(['servicePrice.service']);
 
-        $durationMinutes = (int) ($booking->servicePrice?->duration_min ?? 0);
-        if ($durationMinutes <= 0) {
-            throw ValidationException::withMessages(['starts_at' => 'Booking has invalid duration.']);
+            $durationMinutes = (int) ($booking->servicePrice?->duration_min ?? 0);
+            if ($durationMinutes <= 0) {
+                throw ValidationException::withMessages(['starts_at' => 'Booking has invalid duration.']);
+            }
+
+            $tz = $validated['timezone'] ?? config('app.timezone');
+            $startsAtUtc = CarbonImmutable::parse($validated['starts_at'], $tz)->utc();
+            $endsAtUtc = $startsAtUtc->addMinutes($durationMinutes);
+
+            $staff = Staff::query()->whereKey($validated['staff_id'])->where('active', true)->first();
+            if (! $staff) {
+                throw ValidationException::withMessages(['staff_id' => 'Staff not found or inactive.']);
+            }
+
+            $service = $booking->servicePrice?->service;
+            if (! $service || ! $service->staff()->whereKey($staff->id)->exists()) {
+                throw ValidationException::withMessages(['staff_id' => 'Staff is not assigned to this service.']);
+            }
+
+            if (! $this->staffIsAvailableForSlot($staff, $startsAtUtc, $endsAtUtc, $booking->id, $tz)) {
+                throw ValidationException::withMessages(['starts_at' => 'Staff is not available for this time.']);
+            }
+
+            $oldStartsAt = $booking->starts_at?->setTimezone($tz)->format('l, F j, Y \a\t g:i A');
+            $oldStaffId = $booking->staff_id;
+            $oldStaffName = $booking->staff?->name;
+
+            $booking->staff_id = $staff->id;
+            $booking->starts_at = $startsAtUtc;
+            $booking->ends_at = $endsAtUtc;
+            $booking->save();
+
+            // Send notifications
+            $booking->load('customer');
+            $booking->customer?->notify(new BookingRescheduled($booking, $oldStartsAt, $oldStaffName));
+            
+            // Notify new staff member
+            if ($oldStaffId !== $staff->id) {
+                $staff->notify(new StaffBookingAssigned($booking));
+            }
+
+            return redirect()->route('admin.bookings.show', $booking)
+                ->with('success', 'Booking assignment updated successfully.');
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return redirect()->route('admin.bookings.show', $booking)
+                ->with('error', 'Failed to update booking assignment: ' . $e->getMessage());
         }
-
-        $tz = $validated['timezone'] ?? config('app.timezone');
-        $startsAtUtc = CarbonImmutable::parse($validated['starts_at'], $tz)->utc();
-        $endsAtUtc = $startsAtUtc->addMinutes($durationMinutes);
-
-        $staff = Staff::query()->whereKey($validated['staff_id'])->where('active', true)->first();
-        if (! $staff) {
-            throw ValidationException::withMessages(['staff_id' => 'Staff not found or inactive.']);
-        }
-
-        $service = $booking->servicePrice?->service;
-        if (! $service || ! $service->staff()->whereKey($staff->id)->exists()) {
-            throw ValidationException::withMessages(['staff_id' => 'Staff is not assigned to this service.']);
-        }
-
-        if (! $this->staffIsAvailableForSlot($staff, $startsAtUtc, $endsAtUtc, $booking->id, $tz)) {
-            throw ValidationException::withMessages(['starts_at' => 'Staff is not available for this time.']);
-        }
-
-        $booking->staff_id = $staff->id;
-        $booking->starts_at = $startsAtUtc;
-        $booking->ends_at = $endsAtUtc;
-        $booking->save();
-
-        return redirect()->route('admin.bookings.show', $booking);
     }
 
     public function create(Request $request)
@@ -359,28 +384,53 @@ class BookingController
             'currency' => (string) $servicePrice->currency,
         ]);
 
+        // Send notifications
+        $customer->notify(new BookingConfirmed($booking));
+        $chosenStaff->notify(new StaffBookingAssigned($booking));
+
         return redirect()->route('admin.bookings.show', $booking);
     }
 
     public function updateStatus(Request $request, Booking $booking)
     {
-        $validated = $request->validate([
-            'status' => [
-                'required',
-                'string',
-                Rule::in([
-                    Booking::STATUS_CONFIRMED,
-                    Booking::STATUS_CANCELLED,
-                    Booking::STATUS_REFUNDED,
-                    Booking::STATUS_EXPIRED,
-                    Booking::STATUS_PENDING_PAYMENT,
-                ]),
-            ],
-        ]);
+        try {
+            $validated = $request->validate([
+                'status' => [
+                    'required',
+                    'string',
+                    Rule::in([
+                        Booking::STATUS_CONFIRMED,
+                        Booking::STATUS_CANCELLED,
+                        Booking::STATUS_REFUNDED,
+                        Booking::STATUS_EXPIRED,
+                        Booking::STATUS_PENDING_PAYMENT,
+                    ]),
+                ],
+            ]);
 
-        $booking->status = $validated['status'];
-        $booking->save();
+            $oldStatus = $booking->status;
+            $booking->status = $validated['status'];
+            $booking->save();
 
-        return redirect()->route('admin.bookings.show', $booking);
+            // Send notification to customer based on status change
+            $booking->load('customer');
+            if ($oldStatus !== $validated['status']) {
+                if ($validated['status'] === Booking::STATUS_CONFIRMED) {
+                    $booking->customer?->notify(new BookingConfirmed($booking));
+                } elseif ($validated['status'] === Booking::STATUS_CANCELLED) {
+                    $booking->customer?->notify(new BookingCancelled($booking));
+                }
+            }
+
+            $statusLabel = ucfirst(str_replace('_', ' ', $validated['status']));
+
+            return redirect()->route('admin.bookings.show', $booking)
+                ->with('success', "Booking status updated to {$statusLabel}.");
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            return redirect()->route('admin.bookings.show', $booking)
+                ->with('error', 'Failed to update booking status: ' . $e->getMessage());
+        }
     }
 }

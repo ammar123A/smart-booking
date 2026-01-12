@@ -1,11 +1,13 @@
 <script setup>
 import ModernLayout from '@/Layouts/ModernLayout.vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import Toast from '@/Components/Toast.vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
     booking: {
@@ -17,6 +19,25 @@ const props = defineProps({
         default: () => [],
     },
 });
+
+const page = usePage();
+const toastMessage = ref('');
+const toastType = ref('success');
+
+// Watch for flash messages
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) {
+        toastMessage.value = flash.success;
+        toastType.value = 'success';
+    } else if (flash?.error) {
+        toastMessage.value = flash.error;
+        toastType.value = 'error';
+    }
+}, { immediate: true, deep: true });
+
+const closeToast = () => {
+    toastMessage.value = '';
+};
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
@@ -64,6 +85,12 @@ function saveAssignment() {
 
 <template>
     <ModernLayout title="Admin · Booking">
+        <Toast
+            :message="toastMessage"
+            :type="toastType"
+            @close="closeToast"
+        />
+        
         <template #header>
             <div class="flex items-start justify-between gap-4">
                 <div>

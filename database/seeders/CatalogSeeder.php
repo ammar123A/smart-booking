@@ -87,32 +87,32 @@ class CatalogSeeder extends Seeder
         // Create Staff Members
         $alice = Staff::query()->firstOrCreate(
             ['name' => 'Alice'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'alice@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         $bob = Staff::query()->firstOrCreate(
             ['name' => 'Bob'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'bob@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         $charlie = Staff::query()->firstOrCreate(
             ['name' => 'Charlie'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'charlie@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         $diana = Staff::query()->firstOrCreate(
             ['name' => 'Diana'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'diana@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         $ethan = Staff::query()->firstOrCreate(
             ['name' => 'Ethan'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'ethan@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         $fiona = Staff::query()->firstOrCreate(
             ['name' => 'Fiona'],
-            ['timezone' => $tz, 'active' => true]
+            ['email' => 'fiona@example.com', 'timezone' => $tz, 'active' => true]
         );
 
         // Assign staff to services

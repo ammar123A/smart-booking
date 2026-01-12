@@ -59,6 +59,8 @@ class HandleInertiaRequests extends Middleware
                 'token' => $request->session()->get('flash.token'),
                 'banner' => $request->session()->get('flash.banner'),
                 'bannerStyle' => $request->session()->get('flash.bannerStyle'),
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
             ],
             'isAdmin' => fn () => (bool) ($request->user()?->hasRole('admin') ?? false),
             'roleNames' => fn () => $request->user()?->getRoleNames()?->values() ?? [],

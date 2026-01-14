@@ -1,9 +1,11 @@
 <script setup>
 import axios from 'axios';
 import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import ModernLayout from '@/Layouts/ModernLayout.vue';
 import { Link } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import StarRating from '@/Components/StarRating.vue';
 
 const props = defineProps({
     bookings: {
@@ -16,6 +18,13 @@ const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 const payingBookingId = ref(null);
 const payError = ref(null);
+
+// Review form state
+const reviewingBookingId = ref(null);
+const reviewForm = ref({
+    rating: 0,
+    comment: '',
+});
 
 function fmtDateTime(iso) {
     if (!iso) return '';
@@ -67,6 +76,39 @@ async function payNow(bookingId) {
     } finally {
         payingBookingId.value = null;
     }
+}
+
+function startReview(bookingId) {
+    reviewingBookingId.value = bookingId;
+    reviewForm.value = {
+        rating: 0,
+        comment: '',
+    };
+}
+
+function cancelReview() {
+    reviewingBookingId.value = null;
+    reviewForm.value = {
+        rating: 0,
+        comment: '',
+    };
+}
+
+function submitReview(bookingId) {
+    if (reviewForm.value.rating === 0) {
+        return;
+    }
+
+    router.post(route('reviews.store'), {
+        booking_id: bookingId,
+        rating: reviewForm.value.rating,
+        comment: reviewForm.value.comment,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelReview();
+        },
+    });
 }
 </script>
 
@@ -174,9 +216,77 @@ async function payNow(bookingId) {
                         <div class="text-xs font-medium text-gray-500">Actions</div>
                         <div class="mt-2 flex flex-wrap gap-3">
                             <Link :href="route('bookings.show', { booking: b.id })" class="text-sm font-medium text-gray-700 hover:text-gray-900">
-                                View JSON →
+                                View Details →
                             </Link>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Review Section -->
+                <div v-if="b.review || b.can_review" class="mt-4 border-t border-gray-200 pt-4">
+                    <!-- Existing Review -->
+                    <div v-if="b.review" class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-sm font-medium text-gray-700">Your Review</div>
+                            <StarRating :rating="b.review.rating" size="sm" />
+                        </div>
+                        <p v-if="b.review.comment" class="text-sm text-gray-600 mt-2">{{ b.review.comment }}</p>
+                    </div>
+
+                    <!-- Add Review Form -->
+                    <div v-else-if="reviewingBookingId === b.id" class="bg-blue-50 rounded-lg p-4">
+                        <div class="text-sm font-medium text-gray-900 mb-3">Rate your experience</div>
+                        
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                            <StarRating 
+                                v-model:rating="reviewForm.rating" 
+                                :interactive="true" 
+                                size="lg" 
+                            />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Comment (optional)</label>
+                            <textarea
+                                v-model="reviewForm.comment"
+                                rows="3"
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                placeholder="Share your experience..."
+                            ></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button
+                                type="button"
+                                @click="submitReview(b.id)"
+                                :disabled="reviewForm.rating === 0"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Submit Review
+                            </button>
+                            <button
+                                type="button"
+                                @click="cancelReview"
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Review Button -->
+                    <div v-else>
+                        <button
+                            type="button"
+                            @click="startReview(b.id)"
+                            class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                            Write a Review
+                        </button>
                     </div>
                 </div>
             </div>

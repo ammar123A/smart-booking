@@ -31,6 +31,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'locale',
+        'loyalty_points',
+        'loyalty_tier_id',
     ];
 
     /**
@@ -64,6 +67,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'loyalty_points' => 'integer',
         ];
+    }
+
+    public function loyaltyTier()
+    {
+        return $this->belongsTo(LoyaltyTier::class);
+    }
+
+    public function loyaltyPointsHistory()
+    {
+        return $this->hasMany(LoyaltyPoint::class);
     }
 }

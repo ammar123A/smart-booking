@@ -33,4 +33,9 @@ class Service extends Model
     {
         return $this->belongsToMany(Staff::class, 'service_staff');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 }

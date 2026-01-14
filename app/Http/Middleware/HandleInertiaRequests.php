@@ -64,6 +64,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'isAdmin' => fn () => (bool) ($request->user()?->hasRole('admin') ?? false),
             'roleNames' => fn () => $request->user()?->getRoleNames()?->values() ?? [],
+            'locale' => fn () => app()->getLocale(),
+            'translations' => fn () => __('app'),
         ];
     }
 }

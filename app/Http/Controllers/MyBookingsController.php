@@ -18,6 +18,7 @@ class MyBookingsController
                 'servicePrice.service:id,name',
                 'staff:id,name',
                 'payments' => fn ($q) => $q->latest('id'),
+                'review:id,booking_id,rating,comment',
             ])
             ->latest('starts_at')
             ->limit(50)
@@ -59,6 +60,14 @@ class MyBookingsController
                     'status' => $booking->payments->first()->status,
                     'paid_at' => optional($booking->payments->first()->paid_at)?->toIso8601String(),
                 ] : null,
+                'review' => $booking->review ? [
+                    'id' => $booking->review->id,
+                    'rating' => $booking->review->rating,
+                    'comment' => $booking->review->comment,
+                ] : null,
+                'can_review' => $booking->status === Booking::STATUS_CONFIRMED 
+                    && $booking->ends_at?->isPast() 
+                    && !$booking->review,
             ])
             ->values();
 

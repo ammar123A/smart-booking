@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\MyBookingsController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\ServiceAvailabilityController;
 use Inertia\Inertia;
@@ -28,6 +31,9 @@ Route::middleware([
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
+    // Language switching
+    Route::post('/locale/switch', [LocaleController::class, 'switch'])->name('locale.switch');
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/checkout', CheckoutController::class)->name('checkout');
@@ -39,6 +45,14 @@ Route::middleware([
 
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+
+    // Reviews
+    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+
+    // Loyalty Program
+    Route::get('/loyalty', [LoyaltyController::class, 'index'])->name('loyalty.index');
+    Route::post('/loyalty/rewards/{reward}/redeem', [LoyaltyController::class, 'redeemReward'])->name('loyalty.redeem');
 
     Route::post('/payments/stripe/{booking}', [StripeController::class, 'initiate'])->name('payments.stripe.initiate');
     Route::get('/payments/stripe/success', [StripeController::class, 'success'])->name('payments.stripe.success');

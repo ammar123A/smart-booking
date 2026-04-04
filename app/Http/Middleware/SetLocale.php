@@ -25,13 +25,13 @@ class SetLocale
         }
 
         if (!$locale) {
-            $locale = $request->getPreferredLanguage(['en', 'ms', 'zh-CN']);
+            $locale = $request->getPreferredLanguage(['en', 'ms', 'zh-CN', 'ta']);
         }
 
         $locale = $locale ?: config('app.locale');
 
         // Validate locale
-        $availableLocales = ['en', 'ms', 'zh-CN'];
+        $availableLocales = ['en', 'ms', 'zh-CN', 'ta'];
         if (!in_array($locale, $availableLocales)) {
             $locale = 'en';
         }

@@ -15,7 +15,7 @@ class LoyaltySeeder extends Seeder
     public function run(): void
     {
         // Create Loyalty Tiers
-        $bronze = LoyaltyTier::create([
+        $bronze = LoyaltyTier::firstOrCreate(['slug' => 'bronze'], [
             'name' => 'Bronze',
             'slug' => 'bronze',
             'min_points' => 0,
@@ -27,7 +27,7 @@ class LoyaltySeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $silver = LoyaltyTier::create([
+        $silver = LoyaltyTier::firstOrCreate(['slug' => 'silver'], [
             'name' => 'Silver',
             'slug' => 'silver',
             'min_points' => 500,
@@ -44,7 +44,7 @@ class LoyaltySeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $gold = LoyaltyTier::create([
+        $gold = LoyaltyTier::firstOrCreate(['slug' => 'gold'], [
             'name' => 'Gold',
             'slug' => 'gold',
             'min_points' => 1500,
@@ -62,7 +62,7 @@ class LoyaltySeeder extends Seeder
             'is_active' => true,
         ]);
 
-        $platinum = LoyaltyTier::create([
+        $platinum = LoyaltyTier::firstOrCreate(['slug' => 'platinum'], [
             'name' => 'Platinum',
             'slug' => 'platinum',
             'min_points' => 3000,
@@ -82,62 +82,56 @@ class LoyaltySeeder extends Seeder
         ]);
 
         // Create Rewards
-        Reward::create([
-            'name' => '5% Discount Voucher',
+        Reward::firstOrCreate(['name' => '5% Discount Voucher'], [
             'description' => 'Get 5% off your next booking',
             'points_cost' => 100,
             'type' => 'discount_percentage',
-            'value' => 500, // 5.00% stored as basis points
+            'value' => 500,
             'min_tier_id' => null,
             'is_active' => true,
         ]);
 
-        Reward::create([
-            'name' => '10% Discount Voucher',
+        Reward::firstOrCreate(['name' => '10% Discount Voucher'], [
             'description' => 'Get 10% off your next booking',
             'points_cost' => 200,
             'type' => 'discount_percentage',
-            'value' => 1000, // 10.00%
+            'value' => 1000,
             'min_tier_id' => $silver->id,
             'is_active' => true,
         ]);
 
-        Reward::create([
-            'name' => 'RM 20 Off',
+        Reward::firstOrCreate(['name' => 'RM 20 Off'], [
             'description' => 'Get RM 20 off your next booking',
             'points_cost' => 250,
             'type' => 'discount_fixed',
-            'value' => 2000, // RM 20 in cents
+            'value' => 2000,
             'min_tier_id' => null,
             'is_active' => true,
         ]);
 
-        Reward::create([
-            'name' => 'RM 50 Off',
+        Reward::firstOrCreate(['name' => 'RM 50 Off'], [
             'description' => 'Get RM 50 off your next booking',
             'points_cost' => 500,
             'type' => 'discount_fixed',
-            'value' => 5000, // RM 50 in cents
+            'value' => 5000,
             'min_tier_id' => $gold->id,
             'is_active' => true,
         ]);
 
-        Reward::create([
-            'name' => '20% Discount Voucher',
+        Reward::firstOrCreate(['name' => '20% Discount Voucher'], [
             'description' => 'Get 20% off your next booking (Platinum members only)',
             'points_cost' => 400,
             'type' => 'discount_percentage',
-            'value' => 2000, // 20.00%
+            'value' => 2000,
             'min_tier_id' => $platinum->id,
             'is_active' => true,
         ]);
 
-        Reward::create([
-            'name' => 'RM 100 Off',
+        Reward::firstOrCreate(['name' => 'RM 100 Off'], [
             'description' => 'Get RM 100 off your next booking (Limited availability)',
             'points_cost' => 800,
             'type' => 'discount_fixed',
-            'value' => 10000, // RM 100 in cents
+            'value' => 10000,
             'min_tier_id' => $platinum->id,
             'max_redemptions' => 50,
             'is_active' => true,

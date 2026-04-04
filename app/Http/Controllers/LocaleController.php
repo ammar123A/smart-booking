@@ -10,7 +10,7 @@ class LocaleController extends Controller
     public function switch(Request $request)
     {
         $request->validate([
-            'locale' => ['required', 'string', 'in:en,ms,zh-CN'],
+            'locale' => ['required', 'string', 'in:en,ms,zh-CN,ta'],
         ]);
 
         $locale = $request->input('locale');

@@ -196,11 +196,26 @@ class StripeController extends Controller
 
             $payment = $paymentId ? Payment::find($paymentId) : null;
 
+            // Fallback: if webhook hasn't fired yet (e.g. local dev), finalize now
+            if ($payment && $session->payment_status === 'paid' && $payment->status !== Payment::STATUS_PAID) {
+                $payment->status = Payment::STATUS_PAID;
+                $payment->paid_at = now();
+                $payment->meta = array_merge((array) $payment->meta, [
+                    'session_id' => $session->id,
+                    'payment_intent' => $session->payment_intent,
+                    'payment_status' => $session->payment_status,
+                    'finalized_via' => 'success_redirect',
+                ]);
+                $payment->save();
+
+                FinalizeBookingPayment::dispatchSync($payment->id);
+            }
+
             return Inertia::render('PaymentReturn', [
                 'session_id' => $sessionId,
                 'booking_id' => $bookingId,
                 'payment_id' => $paymentId,
-                'payment_status' => $payment?->status ?? $session->payment_status,
+                'payment_status' => $payment?->fresh()?->status ?? $session->payment_status,
                 'message' => $session->payment_status === 'paid' ? 'Payment successful!' : null,
             ]);
         } catch (\Exception $e) {

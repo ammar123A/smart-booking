@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\BookingCompleted;
 use App\Models\Booking;
 use App\Models\ServicePrice;
 use App\Models\Staff;
@@ -400,6 +401,7 @@ class BookingController
                     'string',
                     Rule::in([
                         Booking::STATUS_CONFIRMED,
+                        Booking::STATUS_COMPLETED,
                         Booking::STATUS_CANCELLED,
                         Booking::STATUS_REFUNDED,
                         Booking::STATUS_EXPIRED,
@@ -419,6 +421,8 @@ class BookingController
                     $booking->customer?->notify(new BookingConfirmed($booking));
                 } elseif ($validated['status'] === Booking::STATUS_CANCELLED) {
                     $booking->customer?->notify(new BookingCancelled($booking));
+                } elseif ($validated['status'] === Booking::STATUS_COMPLETED) {
+                    event(new BookingCompleted($booking));
                 }
             }
 

@@ -1,16 +1,33 @@
 <script setup>
 import ModernLayout from '@/Layouts/ModernLayout.vue';
-import { router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
     user: Object,
     points_history: Array,
     available_rewards: Array,
     all_tiers: Array,
+    my_vouchers: Array,
 });
 
+const page = usePage();
 const activeTab = ref('overview');
+const flashMessage = ref('');
+const flashType = ref('success');
+const redeemingId = ref(null);
+
+watch(() => page.props.flash, (flash) => {
+    if (flash?.success) {
+        flashMessage.value = flash.success;
+        flashType.value = 'success';
+        setTimeout(() => { flashMessage.value = ''; }, 6000);
+    } else if (flash?.error) {
+        flashMessage.value = flash.error;
+        flashType.value = 'error';
+        setTimeout(() => { flashMessage.value = ''; }, 6000);
+    }
+}, { immediate: true, deep: true });
 
 const formatPoints = (points) => {
     return points >= 0 ? `+${points}` : points.toString();
@@ -30,8 +47,10 @@ const redeemReward = (reward) => {
         return;
     }
 
+    redeemingId.value = reward.id;
     router.post(route('loyalty.redeem', reward.id), {}, {
         preserveScroll: true,
+        onFinish: () => { redeemingId.value = null; },
     });
 };
 
@@ -68,6 +87,13 @@ const getProgressToNextTier = () => {
         <template #header>
             <h1 class="text-xl font-semibold text-gray-900">Loyalty Program</h1>
         </template>
+
+        <!-- Flash Message -->
+        <div v-if="flashMessage" class="mb-4 rounded-lg p-4 text-sm font-medium"
+            :class="flashType === 'success' ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-red-50 border border-red-200 text-red-800'"
+        >
+            {{ flashMessage }}
+        </div>
 
         <div class="space-y-6">
             <!-- Points & Tier Overview -->
@@ -166,6 +192,18 @@ const getProgressToNextTier = () => {
                     >
                         Tier Benefits
                     </button>
+                    <button
+                        @click="activeTab = 'vouchers'"
+                        :class="[
+                            activeTab === 'vouchers'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                            'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+                        ]"
+                    >
+                        My Vouchers
+                        <span v-if="my_vouchers.length > 0" class="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-700">{{ my_vouchers.length }}</span>
+                    </button>
                 </nav>
             </div>
 
@@ -191,10 +229,10 @@ const getProgressToNextTier = () => {
                                 <p class="text-sm text-gray-600 mb-3">{{ reward.description }}</p>
                                 <button
                                     @click="redeemReward(reward)"
-                                    :disabled="!reward.can_redeem"
+                                    :disabled="!reward.can_redeem || redeemingId === reward.id"
                                     class="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    Redeem Now
+                                    {{ redeemingId === reward.id ? 'Redeeming…' : 'Redeem Now' }}
                                 </button>
                             </div>
                         </div>
@@ -261,13 +299,13 @@ const getProgressToNextTier = () => {
                             </div>
                             <button
                                 @click="redeemReward(reward)"
-                                :disabled="!reward.can_redeem"
+                                :disabled="!reward.can_redeem || redeemingId === reward.id"
                                 class="w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors"
                                 :class="reward.can_redeem 
                                     ? 'bg-blue-600 text-white hover:bg-blue-700' 
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'"
                             >
-                                {{ reward.can_redeem ? 'Redeem Now' : 'Not Available' }}
+                                {{ redeemingId === reward.id ? 'Redeeming…' : (reward.can_redeem ? 'Redeem Now' : 'Not Available') }}
                             </button>
                         </div>
                     </div>
@@ -357,6 +395,37 @@ const getProgressToNextTier = () => {
                             <div>
                                 <p class="text-xs text-gray-600">Points</p>
                                 <p class="text-lg font-bold text-gray-900">{{ tier.points_multiplier }}x</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- My Vouchers Tab -->
+                <div v-if="activeTab === 'vouchers'">
+                    <div v-if="my_vouchers.length === 0" class="bg-white rounded-lg border border-gray-200 p-10 text-center text-gray-500">
+                        <p class="text-sm">No active vouchers. Redeem rewards to get voucher codes!</p>
+                    </div>
+                    <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <div
+                            v-for="v in my_vouchers"
+                            :key="v.id"
+                            class="bg-white rounded-lg border border-gray-200 p-5 flex flex-col gap-3"
+                        >
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="text-sm font-medium text-gray-700">{{ v.reward_name }}</p>
+                                <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">Active</span>
+                            </div>
+                            <div class="flex items-center gap-2 rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-2">
+                                <span class="flex-1 font-mono text-base font-bold tracking-widest text-gray-900">{{ v.code }}</span>
+                                <button
+                                    type="button"
+                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                    @click="navigator.clipboard.writeText(v.code)"
+                                >Copy</button>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span>{{ v.type === 'discount_percentage' ? (v.value / 100) + '% discount' : 'RM ' + (v.value / 100).toFixed(2) + ' off' }}</span>
+                                <span>Expires {{ v.expires_at }}</span>
                             </div>
                         </div>
                     </div>

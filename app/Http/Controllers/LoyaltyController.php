@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\LoyaltyService;
 use App\Models\Reward;
+use App\Models\UserVoucher;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -87,21 +88,28 @@ class LoyaltyController extends Controller
             'points_history' => $pointsHistory,
             'available_rewards' => $availableRewards,
             'all_tiers' => $allTiers,
+            'my_vouchers' => $user->activeVouchers()->with('reward')->latest()->get()->map(function ($v) {
+                return [
+                    'id' => $v->id,
+                    'code' => $v->code,
+                    'reward_name' => $v->reward?->name,
+                    'type' => $v->type,
+                    'value' => $v->value,
+                    'expires_at' => $v->expires_at?->format('M d, Y'),
+                    'status' => $v->status,
+                ];
+            }),
         ]);
     }
 
     public function redeemReward(Request $request, Reward $reward)
     {
-        $request->validate([
-            'reward_id' => 'required|exists:rewards,id',
-        ]);
-
         $user = $request->user();
 
         try {
-            $this->loyaltyService->redeemReward($user, $reward);
+            $voucher = $this->loyaltyService->redeemReward($user, $reward);
 
-            return back()->with('success', 'Reward redeemed successfully!');
+            return back()->with('success', "Reward redeemed! Your voucher code is: {$voucher->code}");
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }

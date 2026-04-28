@@ -58,8 +58,19 @@ function fmtMoney(cents, currency) {
     return `${amount} ${currency || ''}`.trim();
 }
 
+const statusProcessing = ref(false);
+
 function setStatus(status) {
-    router.patch(route('admin.bookings.status', { booking: props.booking.id }), { status }, { preserveScroll: true });
+    if (statusProcessing.value) return;
+    statusProcessing.value = true;
+    router.patch(
+        route('admin.bookings.status', { booking: props.booking.id }),
+        { status },
+        {
+            preserveScroll: true,
+            onFinish: () => { statusProcessing.value = false; },
+        }
+    );
 }
 
 function isoToUtcInput(iso) {
@@ -169,16 +180,19 @@ function saveAssignment() {
             <section class="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 class="text-sm font-semibold text-gray-900">Actions</h2>
                 <div class="mt-4 space-y-2">
-                    <PrimaryButton :type="'button'" class="w-full justify-center" @click="setStatus('confirmed')">
+                    <PrimaryButton :type="'button'" class="w-full justify-center" :disabled="statusProcessing" @click="setStatus('confirmed')">
                         Mark confirmed
                     </PrimaryButton>
-                    <SecondaryButton :type="'button'" class="w-full justify-center" @click="setStatus('cancelled')">
+                    <PrimaryButton :type="'button'" class="w-full justify-center" :disabled="statusProcessing" @click="setStatus('completed')">
+                        Mark completed
+                    </PrimaryButton>
+                    <SecondaryButton :type="'button'" class="w-full justify-center" :disabled="statusProcessing" @click="setStatus('cancelled')">
                         Mark cancelled
                     </SecondaryButton>
-                    <SecondaryButton :type="'button'" class="w-full justify-center" @click="setStatus('refunded')">
+                    <SecondaryButton :type="'button'" class="w-full justify-center" :disabled="statusProcessing" @click="setStatus('refunded')">
                         Mark refunded
                     </SecondaryButton>
-                    <SecondaryButton :type="'button'" class="w-full justify-center" @click="setStatus('expired')">
+                    <SecondaryButton :type="'button'" class="w-full justify-center" :disabled="statusProcessing" @click="setStatus('expired')">
                         Mark expired
                     </SecondaryButton>
                 </div>

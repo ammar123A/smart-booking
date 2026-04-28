@@ -10,6 +10,10 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    active_vouchers: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const timezone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
@@ -23,12 +27,31 @@ const selectedStartAt = ref(null);
 
 const errorMessage = ref(null);
 const processing = ref(false);
+const selectedVoucherCode = ref(null);
 
 const selectedService = computed(() => props.services.find((s) => s.id === selectedServiceId.value) || null);
 const selectedPrice = computed(() => {
     const service = selectedService.value;
     if (!service) return null;
     return service.prices.find((p) => p.id === selectedPriceId.value) || null;
+});
+
+const selectedVoucher = computed(() =>
+    props.active_vouchers.find((v) => v.code === selectedVoucherCode.value) || null
+);
+
+const discountAmount = computed(() => {
+    if (!selectedVoucher.value || !selectedPrice.value) return 0;
+    const v = selectedVoucher.value;
+    if (v.type === 'discount_percentage') {
+        return Math.floor(selectedPrice.value.amount * v.value / 10000);
+    }
+    return Math.min(v.value, selectedPrice.value.amount);
+});
+
+const finalAmount = computed(() => {
+    if (!selectedPrice.value) return 0;
+    return Math.max(0, selectedPrice.value.amount - discountAmount.value);
 });
 
 watch([selectedServiceId], () => {
@@ -104,6 +127,7 @@ async function proceedToPayment() {
             service_price_id: selectedPriceId.value,
             starts_at: selectedStartAt.value,
             timezone: timezone.value,
+            voucher_code: selectedVoucherCode.value || undefined,
         });
 
         const booking = bookingRes.data?.data;
@@ -288,6 +312,39 @@ async function proceedToPayment() {
                         </div>
                     </div>
 
+                    <!-- Voucher Selection -->
+                    <div v-if="selectedStartAt && active_vouchers.length > 0" class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <label class="block text-xs font-medium text-gray-600 mb-2">Apply Voucher</label>
+                        <select
+                            v-model="selectedVoucherCode"
+                            class="block w-full rounded-md border-gray-300 text-sm focus:border-gray-500 focus:ring-gray-500"
+                        >
+                            <option :value="null">— No voucher —</option>
+                            <option v-for="v in active_vouchers" :key="v.code" :value="v.code">
+                                {{ v.code }} · {{ v.type === 'discount_percentage' ? (v.value / 100) + '% off' : 'RM ' + (v.value / 100).toFixed(2) + ' off' }} (expires {{ v.expires_at }})
+                            </option>
+                        </select>
+                        <div v-if="selectedVoucher" class="mt-2 text-xs text-green-700 font-medium">
+                            Discount applied: −{{ formatMoney(discountAmount, selectedPrice?.currency) }}
+                        </div>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div v-if="selectedStartAt && selectedPrice" class="mt-4 rounded-lg border border-gray-200 p-4 space-y-1">
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span>Service price</span>
+                            <span>{{ formatMoney(selectedPrice.amount, selectedPrice.currency) }}</span>
+                        </div>
+                        <div v-if="discountAmount > 0" class="flex justify-between text-sm text-green-700">
+                            <span>Voucher discount</span>
+                            <span>−{{ formatMoney(discountAmount, selectedPrice.currency) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm font-semibold text-gray-900 border-t border-gray-200 pt-2 mt-2">
+                            <span>Total</span>
+                            <span>{{ formatMoney(finalAmount, selectedPrice.currency) }}</span>
+                        </div>
+                    </div>
+
                     <div class="mt-6 flex items-center justify-between gap-3">
                         <div class="text-sm text-gray-600">
                             <span v-if="selectedStartAt">Selected: <span class="font-medium text-gray-900">{{ formatTime(selectedStartAt) }}</span></span>
@@ -297,8 +354,7 @@ async function proceedToPayment() {
                         <PrimaryButton :type="'button'" :disabled="processing || !selectedStartAt" @click="proceedToPayment">
                             {{ processing ? 'Redirecting…' : 'Pay with Stripe' }}
                         </PrimaryButton>
-                    </div>
-                </div>
+                    </div>                </div>
             </section>
         </div>
     </ModernLayout>

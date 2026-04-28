@@ -80,4 +80,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(LoyaltyPoint::class);
     }
+
+    public function vouchers()
+    {
+        return $this->hasMany(UserVoucher::class);
+    }
+
+    public function activeVouchers()
+    {
+        return $this->vouchers()
+            ->where('status', UserVoucher::STATUS_ACTIVE)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            });
+    }
 }

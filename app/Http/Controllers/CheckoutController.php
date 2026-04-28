@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\UserVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -44,8 +45,21 @@ class CheckoutController
             ])
             ->values();
 
+        $activeVouchers = $request->user()
+            ->activeVouchers()
+            ->get()
+            ->map(fn (UserVoucher $v) => [
+                'id' => $v->id,
+                'code' => $v->code,
+                'type' => $v->type,
+                'value' => $v->value,
+                'expires_at' => $v->expires_at?->format('M d, Y'),
+            ])
+            ->values();
+
         return Inertia::render('Checkout', [
             'services' => $services,
+            'active_vouchers' => $activeVouchers,
         ]);
     }
 }

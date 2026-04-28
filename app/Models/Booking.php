@@ -14,6 +14,7 @@ class Booking extends Model
 
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
     public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_COMPLETED = 'completed';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUNDED = 'refunded';
@@ -22,11 +23,13 @@ class Booking extends Model
         'customer_id',
         'staff_id',
         'service_price_id',
+        'voucher_id',
         'status',
         'starts_at',
         'ends_at',
         'expires_at',
         'total_amount',
+        'discount_amount',
         'currency',
     ];
 
@@ -63,5 +66,10 @@ class Booking extends Model
     public function review(): HasOne
     {
         return $this->hasOne(Review::class);
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(UserVoucher::class);
     }
 }

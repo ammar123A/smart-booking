@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\ServicePrice;
+use App\Models\UserVoucher;
 use App\Services\BookingService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class BookingController extends Controller
             'service_price_id' => ['required', 'integer', 'exists:service_prices,id'],
             'starts_at' => ['required', 'date'],
             'timezone' => ['sometimes', 'string'],
+            'voucher_code' => ['sometimes', 'nullable', 'string'],
         ]);
 
         /** @var ServicePrice $servicePrice */
@@ -29,6 +31,26 @@ class BookingController extends Controller
         $timezone = $validated['timezone'] ?? null;
 
         $booking = $bookingService->createPendingBookingAutoAssign($request->user(), $servicePrice, $startsAtUtc, $timezone);
+
+        // Apply voucher if provided
+        if (!empty($validated['voucher_code'])) {
+            $voucher = UserVoucher::where('code', $validated['voucher_code'])
+                ->where('user_id', $request->user()->id)
+                ->first();
+
+            if ($voucher && $voucher->isUsable()) {
+                $discount = $voucher->calculateDiscount($booking->total_amount);
+                $booking->voucher_id = $voucher->id;
+                $booking->discount_amount = $discount;
+                $booking->total_amount = max(0, $booking->total_amount - $discount);
+                $booking->save();
+
+                $voucher->status = UserVoucher::STATUS_USED;
+                $voucher->used_at = now();
+                $voucher->booking_id = $booking->id;
+                $voucher->save();
+            }
+        }
 
         return response()->json(['data' => $booking], 201);
     }

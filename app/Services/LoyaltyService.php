@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\LoyaltyPoint;
 use App\Models\LoyaltyTier;
 use App\Models\Reward;
+use App\Models\UserVoucher;
 use Illuminate\Support\Facades\DB;
 
 class LoyaltyService
@@ -67,9 +68,9 @@ class LoyaltyService
     }
 
     /**
-     * Redeem a reward
+     * Redeem a reward — deducts points and generates a usable voucher.
      */
-    public function redeemReward(User $user, Reward $reward): LoyaltyPoint
+    public function redeemReward(User $user, Reward $reward): UserVoucher
     {
         if (!$reward->canBeRedeemedBy($user)) {
             throw new \Exception('You cannot redeem this reward');
@@ -77,7 +78,7 @@ class LoyaltyService
 
         return DB::transaction(function () use ($user, $reward) {
             $newBalance = $user->loyalty_points - $reward->points_cost;
-            
+
             $loyaltyPoint = LoyaltyPoint::create([
                 'user_id' => $user->id,
                 'points' => -$reward->points_cost,
@@ -89,7 +90,18 @@ class LoyaltyService
             $user->update(['loyalty_points' => $newBalance]);
             $reward->increment('times_redeemed');
 
-            return $loyaltyPoint;
+            $voucher = UserVoucher::create([
+                'user_id' => $user->id,
+                'reward_id' => $reward->id,
+                'loyalty_point_id' => $loyaltyPoint->id,
+                'code' => UserVoucher::generateCode(),
+                'type' => $reward->type,
+                'value' => $reward->value,
+                'status' => UserVoucher::STATUS_ACTIVE,
+                'expires_at' => now()->addDays(30),
+            ]);
+
+            return $voucher;
         });
     }
 

@@ -410,6 +410,18 @@ class BookingController
                 ],
             ]);
 
+            // Cannot mark a booking as completed if it hasn't ended yet
+            if ($validated['status'] === Booking::STATUS_COMPLETED) {
+                $endsAt = $booking->ends_at instanceof \Carbon\CarbonInterface
+                    ? $booking->ends_at
+                    : CarbonImmutable::parse($booking->ends_at, 'UTC');
+
+                if ($endsAt->isFuture()) {
+                    return redirect()->route('admin.bookings.show', $booking)
+                        ->with('error', 'Cannot mark a booking as completed before it has ended.');
+                }
+            }
+
             $oldStatus = $booking->status;
             $booking->status = $validated['status'];
             $booking->save();

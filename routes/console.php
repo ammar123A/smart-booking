@@ -9,4 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('bookings:expire-pending')->everyMinute();
+Schedule::command('bookings:auto-complete')->everyMinute();
 Schedule::command('bookings:send-reminders')->hourly();

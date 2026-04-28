@@ -1,6 +1,7 @@
 <script setup>
 import ModernLayout from '@/Layouts/ModernLayout.vue';
 import { Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     bookings: {
@@ -9,7 +10,37 @@ const props = defineProps({
     },
 });
 
+const filterStatus = ref('');
+const filterService = ref('');
+const filterCustomer = ref('');
+
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+// Unique service names derived from loaded bookings
+const serviceOptions = computed(() => {
+    const names = [...new Set(props.bookings.map(b => b.service?.name).filter(Boolean))].sort();
+    return names;
+});
+
+const filtered = computed(() => {
+    return props.bookings.filter(b => {
+        if (filterStatus.value && b.status !== filterStatus.value) return false;
+        if (filterService.value && b.service?.name !== filterService.value) return false;
+        if (filterCustomer.value) {
+            const q = filterCustomer.value.toLowerCase();
+            const name = (b.customer?.name || '').toLowerCase();
+            const email = (b.customer?.email || '').toLowerCase();
+            if (!name.includes(q) && !email.includes(q)) return false;
+        }
+        return true;
+    });
+});
+
+function clearFilters() {
+    filterStatus.value = '';
+    filterService.value = '';
+    filterCustomer.value = '';
+}
 
 function fmtDateTime(iso) {
     if (!iso) return '';
@@ -32,6 +63,8 @@ function badgeClass(status) {
     switch (status) {
         case 'confirmed':
             return 'bg-green-50 text-green-700 border-green-200';
+        case 'completed':
+            return 'bg-blue-50 text-blue-700 border-blue-200';
         case 'pending_payment':
             return 'bg-amber-50 text-amber-700 border-amber-200';
         case 'expired':
@@ -59,6 +92,53 @@ function badgeClass(status) {
             </div>
         </template>
 
+        <!-- Filters -->
+        <div class="mb-4 flex flex-wrap items-end gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                <select v-model="filterStatus" class="rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-400 focus:ring-gray-400">
+                    <option value="">All statuses</option>
+                    <option value="pending_payment">Pending Payment</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="refunded">Refunded</option>
+                    <option value="expired">Expired</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Service</label>
+                <select v-model="filterService" class="rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-400 focus:ring-gray-400">
+                    <option value="">All services</option>
+                    <option v-for="name in serviceOptions" :key="name" :value="name">{{ name }}</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Customer</label>
+                <input
+                    v-model="filterCustomer"
+                    type="text"
+                    placeholder="Name or email…"
+                    class="rounded-md border-gray-300 text-sm shadow-sm focus:border-gray-400 focus:ring-gray-400 w-48"
+                />
+            </div>
+
+            <button
+                v-if="filterStatus || filterService || filterCustomer"
+                type="button"
+                class="text-xs text-gray-500 hover:text-gray-800 underline self-end pb-1"
+                @click="clearFilters"
+            >
+                Clear filters
+            </button>
+
+            <span class="self-end pb-1 text-xs text-gray-400 ml-auto">
+                {{ filtered.length }} / {{ bookings.length }} bookings
+            </span>
+        </div>
+
         <div class="bg-white border border-gray-200 rounded-lg overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -75,7 +155,7 @@ function badgeClass(status) {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="b in bookings" :key="b.id">
+                    <tr v-for="b in filtered" :key="b.id">
                         <td class="px-3 py-2 text-sm text-gray-900">#{{ b.id }}</td>
                         <td class="px-3 py-2">
                             <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium" :class="badgeClass(b.status)">
@@ -104,11 +184,12 @@ function badgeClass(status) {
                         </td>
                     </tr>
 
-                    <tr v-if="bookings.length === 0">
-                        <td colspan="9" class="px-3 py-6 text-center text-sm text-gray-600">No bookings.</td>
+                    <tr v-if="filtered.length === 0">
+                        <td colspan="9" class="px-3 py-6 text-center text-sm text-gray-600">No bookings match the selected filters.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </ModernLayout>
 </template>
+

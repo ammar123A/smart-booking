@@ -11,27 +11,83 @@ defineProps({
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 text-gray-900">
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-gray-900">
         <Head :title="title" />
 
-        <div class="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-            <div class="w-full max-w-md">
-                <div class="mb-8">
-                    <Link :href="route('dashboard')" class="inline-flex items-center gap-2">
-                        <div class="size-10 rounded-xl bg-gray-900" />
-                        <span class="text-sm font-semibold">Smart Booking</span>
+        <div class="min-h-screen flex">
+            <!-- Left decorative panel (hidden on small screens) -->
+            <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 flex-col justify-between p-12 relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute top-0 right-0 size-96 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+                <div class="absolute bottom-0 left-0 size-72 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/3 pointer-events-none" />
+
+                <!-- Logo -->
+                <Link :href="'/'" class="relative flex items-center gap-3">
+                    <svg class="size-10" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="400" height="400" rx="90" fill="white" fill-opacity="0.2"/>
+                        <path d="M120 90h140a76 76 0 0 1 53 130 82 82 0 0 1-41 158H120Z" fill="#FFFFFF"/>
+                        <circle cx="240" cy="166" r="38" fill="#1E5BFF"/>
+                        <path d="M170 244h88a44 44 0 1 1 0 88h-88Z" fill="#1E5BFF"/>
+                        <path d="M192 290l22 22 52-52" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                    <span class="text-xl font-bold text-white">BookIt</span>
+                </Link>
+
+                <!-- Tagline -->
+                <div class="relative">
+                    <h2 class="text-4xl font-bold text-white leading-tight">Smart scheduling,<br/>zero conflicts.</h2>
+                    <p class="mt-4 text-blue-100 text-lg leading-relaxed">Real-time availability, auto-assigned staff, and secure payments — all in one place.</p>
+
+                    <div class="mt-10 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <svg class="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <span class="text-blue-100 text-sm">Zero double-booking with DB-level locks</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <svg class="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <span class="text-blue-100 text-sm">Stripe-secured payment processing</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <svg class="size-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            </div>
+                            <span class="text-blue-100 text-sm">Automated staff assignment per slot</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="relative text-blue-200 text-sm">© {{ new Date().getFullYear() }} BookIt</p>
+            </div>
+
+            <!-- Right: form panel -->
+            <div class="flex-1 flex items-center justify-center px-6 py-12 sm:px-12">
+                <div class="w-full max-w-sm">
+                    <!-- Mobile logo -->
+                    <Link :href="'/'" class="lg:hidden inline-flex items-center gap-2.5 mb-8">
+                        <svg class="size-8" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="0" y="0" width="400" height="400" rx="90" fill="#1E5BFF"/>
+                            <path d="M120 90h140a76 76 0 0 1 53 130 82 82 0 0 1-41 158H120Z" fill="#FFFFFF"/>
+                            <circle cx="240" cy="166" r="38" fill="#1E5BFF"/>
+                            <path d="M170 244h88a44 44 0 1 1 0 88h-88Z" fill="#1E5BFF"/>
+                            <path d="M192 290l22 22 52-52" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                        <span class="text-base font-bold text-gray-900">BookIt</span>
                     </Link>
 
-                    <h1 class="mt-6 text-2xl font-semibold tracking-tight">{{ title }}</h1>
-                    <p v-if="subtitle" class="mt-2 text-sm text-gray-600">{{ subtitle }}</p>
-                </div>
+                    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ title }}</h1>
+                    <p v-if="subtitle" class="mt-2 text-sm text-gray-500">{{ subtitle }}</p>
 
-                <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <slot />
-                </div>
+                    <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                        <slot />
+                    </div>
 
-                <div v-if="$slots.footer" class="mt-6 text-sm text-gray-600">
-                    <slot name="footer" />
+                    <div v-if="$slots.footer" class="mt-6 text-sm text-gray-500 text-center">
+                        <slot name="footer" />
+                    </div>
                 </div>
             </div>
         </div>

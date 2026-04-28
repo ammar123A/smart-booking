@@ -1,6 +1,5 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
@@ -27,8 +26,14 @@ const logout = () => {
             <!-- Logo/Brand -->
             <div class="h-16 flex items-center px-6 border-b border-white/10">
                 <Link :href="route('dashboard')" class="flex items-center gap-3 group">
-                    <ApplicationMark class="block h-9 w-auto filter brightness-0 invert" />
-                    <span class="text-xl font-bold text-white group-hover:text-gray-300 transition-colors">Smart Booking</span>
+                    <svg class="size-8 flex-shrink-0" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="400" height="400" rx="90" fill="white" fill-opacity="0.15"/>
+                        <path d="M120 90h140a76 76 0 0 1 53 130 82 82 0 0 1-41 158H120Z" fill="#FFFFFF"/>
+                        <circle cx="240" cy="166" r="38" fill="#1E5BFF"/>
+                        <path d="M170 244h88a44 44 0 1 1 0 88h-88Z" fill="#1E5BFF"/>
+                        <path d="M192 290l22 22 52-52" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                    <span class="text-xl font-bold text-white group-hover:text-gray-300 transition-colors">BookIt</span>
                 </Link>
             </div>
 

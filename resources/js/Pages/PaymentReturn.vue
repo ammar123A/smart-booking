@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
                 >
                     {{ polling ? 'Refreshing…' : 'Refresh status' }}
                 </button>
-                <Link :href="route('my-bookings')" class="text-sm font-medium text-gray-700 hover:text-gray-900">
+                <Link :href="liveStatus === 'paid' ? route('my-bookings') + '?paid=1' : route('my-bookings')" class="text-sm font-medium text-gray-700 hover:text-gray-900">
                     Go to My bookings →
                 </Link>
                 <Link :href="route('checkout')" class="text-sm font-medium text-gray-700 hover:text-gray-900">

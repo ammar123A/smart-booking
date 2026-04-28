@@ -158,7 +158,7 @@ class AnalyticsService
     public function getPopularTimeSlots(CarbonImmutable $startDate, CarbonImmutable $endDate): array
     {
         $data = Booking::query()
-            ->selectRaw('HOUR(starts_at) as hour, COUNT(*) as booking_count')
+            ->selectRaw('EXTRACT(HOUR FROM starts_at)::int as hour, COUNT(*) as booking_count')
             ->where('status', Booking::STATUS_CONFIRMED)
             ->whereBetween('starts_at', [$startDate, $endDate])
             ->groupBy('hour')
@@ -178,7 +178,7 @@ class AnalyticsService
     public function getBookingsByDayOfWeek(CarbonImmutable $startDate, CarbonImmutable $endDate): array
     {
         $data = Booking::query()
-            ->selectRaw('DAYOFWEEK(starts_at) as day_of_week, COUNT(*) as booking_count')
+            ->selectRaw('(EXTRACT(DOW FROM starts_at)::int + 1) as day_of_week, COUNT(*) as booking_count')
             ->where('status', Booking::STATUS_CONFIRMED)
             ->whereBetween('starts_at', [$startDate, $endDate])
             ->groupBy('day_of_week')

@@ -36,8 +36,8 @@ class LoyaltyService
 
             $user->update(['loyalty_points' => $newBalance]);
 
-            // Check for tier upgrade
-            $this->checkAndUpgradeTier($user);
+            // Check for tier change (upgrade or downgrade)
+            $this->checkAndUpdateTier($user);
 
             return $loyaltyPoint;
         });
@@ -53,9 +53,9 @@ class LoyaltyService
     }
 
     /**
-     * Check if user qualifies for tier upgrade
+     * Check if user qualifies for a different tier (upgrade or downgrade)
      */
-    public function checkAndUpgradeTier(User $user): void
+    public function checkAndUpdateTier(User $user): void
     {
         $qualifyingTier = LoyaltyTier::where('is_active', true)
             ->where('min_points', '<=', $user->loyalty_points)
@@ -90,6 +90,9 @@ class LoyaltyService
             $user->update(['loyalty_points' => $newBalance]);
             $reward->increment('times_redeemed');
 
+            // Check for tier downgrade after spending points
+            $this->checkAndUpdateTier($user);
+
             $voucher = UserVoucher::create([
                 'user_id' => $user->id,
                 'reward_id' => $reward->id,
@@ -122,7 +125,7 @@ class LoyaltyService
             ]);
 
             $user->update(['loyalty_points' => $newBalance]);
-            $this->checkAndUpgradeTier($user);
+            $this->checkAndUpdateTier($user);
 
             return $loyaltyPoint;
         });

@@ -16,7 +16,7 @@ defineProps({
 
         <div class="min-h-screen flex">
             <!-- Left decorative panel (hidden on small screens) -->
-            <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 flex-col justify-between p-12 relative overflow-hidden">
+            <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-900 to-slate-900 flex-col justify-between p-12 relative overflow-hidden">
                 <!-- Background decoration -->
                 <div class="absolute top-0 right-0 size-96 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/3 pointer-events-none" />
                 <div class="absolute bottom-0 left-0 size-72 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/3 pointer-events-none" />

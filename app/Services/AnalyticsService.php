@@ -115,7 +115,7 @@ class AnalyticsService
             ->selectRaw('service_prices.service_id, services.name, COUNT(*) as booking_count, SUM(bookings.total_amount) as revenue')
             ->join('service_prices', 'bookings.service_price_id', '=', 'service_prices.id')
             ->join('services', 'service_prices.service_id', '=', 'services.id')
-            ->where('bookings.status', Booking::STATUS_CONFIRMED)
+            ->whereIn('bookings.status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED])
             ->whereBetween('bookings.starts_at', [$startDate, $endDate])
             ->groupBy('service_prices.service_id', 'services.name')
             ->orderByDesc('booking_count')
@@ -138,7 +138,7 @@ class AnalyticsService
         $data = Booking::query()
             ->selectRaw('staff_id, staff.name, COUNT(*) as booking_count, SUM(bookings.total_amount) as revenue')
             ->join('staff', 'bookings.staff_id', '=', 'staff.id')
-            ->where('bookings.status', Booking::STATUS_CONFIRMED)
+            ->whereIn('bookings.status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED])
             ->whereBetween('bookings.starts_at', [$startDate, $endDate])
             ->groupBy('staff_id', 'staff.name')
             ->orderByDesc('booking_count')
@@ -159,7 +159,7 @@ class AnalyticsService
     {
         $data = Booking::query()
             ->selectRaw('EXTRACT(HOUR FROM starts_at)::int as hour, COUNT(*) as booking_count')
-            ->where('status', Booking::STATUS_CONFIRMED)
+            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED])
             ->whereBetween('starts_at', [$startDate, $endDate])
             ->groupBy('hour')
             ->orderBy('hour')
@@ -179,7 +179,7 @@ class AnalyticsService
     {
         $data = Booking::query()
             ->selectRaw('(EXTRACT(DOW FROM starts_at)::int + 1) as day_of_week, COUNT(*) as booking_count')
-            ->where('status', Booking::STATUS_CONFIRMED)
+            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED])
             ->whereBetween('starts_at', [$startDate, $endDate])
             ->groupBy('day_of_week')
             ->orderBy('day_of_week')
@@ -234,7 +234,7 @@ class AnalyticsService
     {
         $result = Booking::query()
             ->selectRaw('AVG(total_amount) as avg_amount, COUNT(*) as count')
-            ->where('status', Booking::STATUS_CONFIRMED)
+            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED])
             ->whereBetween('created_at', [$startDate, $endDate])
             ->first();
 
